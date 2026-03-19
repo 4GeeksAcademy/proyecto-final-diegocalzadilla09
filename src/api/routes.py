@@ -5,7 +5,8 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, User
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
-from flask_bcrypt import Bcrypt 
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import create_access_token
 
 api = Blueprint('api', __name__)
 
@@ -21,7 +22,6 @@ def handle_hello():
         "message": "Hello! I'm a message that came from the backend, check the network tab on the google inspector and you will see the GET request"
     }
     return jsonify(response_body), 200
-
 
 
 @api.route('/register', methods=['POST'])
@@ -52,3 +52,28 @@ def register_user():
     db.session.commit()
 
     return jsonify({"msg": "Usuario creado exitosamente"}), 201
+
+
+@api.route('/login', methods=['POST'])
+def login_user():
+
+    body = request.get_json()
+
+    if body is None or 'email' not in body or 'password' not in body:
+        return jsonify({"msg": "El email y el password son obligatorios"}), 400
+
+    user = User.query.filter_by(email=body['email']).first()
+    if user is None:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+
+    password_is_valid = bcrypt.check_password_hash(
+        user.password, body['password'])
+    if not password_is_valid:
+        return jsonify({"msg": "Contraseña incorrecta"}), 401
+
+    access_token = create_access_token(identity=user.id)
+
+    return jsonify({
+        "msg": "Login exitoso",
+        "token": access_token
+    }), 200

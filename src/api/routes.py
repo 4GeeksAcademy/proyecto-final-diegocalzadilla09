@@ -2,11 +2,11 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User
+from api.models import db, User, CartItem, Product
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 api = Blueprint('api', __name__)
 
@@ -71,9 +71,43 @@ def login_user():
     if not password_is_valid:
         return jsonify({"msg": "Contraseña incorrecta"}), 401
 
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
 
     return jsonify({
         "msg": "Login exitoso",
         "token": access_token
     }), 200
+
+
+@api.route('/cart', methods=['POST'])
+@jwt_required()
+def add_to_cart():
+    current_user_id = get_jwt_identity()
+
+    body = request.get_json()
+    product_id = body.get('product_id')
+    quantity_to_add = body.get('quantity', 1)
+
+    if not product_id:
+        return jsonify({"msg": "Falta el product_id"}), 400
+
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"msg": "Producto no encontrado en el catálogo"}), 404
+
+    existing_item = CartItem.query.filter_by(
+        user_id=current_user_id, product_id=product_id).first()
+
+    if existing_item:
+        existing_item.quantity += quantity_to_add
+    else:
+        new_item = CartItem(
+            user_id=current_user_id,
+            product_id=product_id,
+            quantity=quantity_to_add
+        )
+        db.session.add(new_item)
+
+    db.session.commit()
+
+    return jsonify({"msg": "Carrito actualizado exitosamente"}), 200

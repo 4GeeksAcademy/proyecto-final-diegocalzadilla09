@@ -111,3 +111,24 @@ def add_to_cart():
     db.session.commit()
 
     return jsonify({"msg": "Carrito actualizado exitosamente"}), 200
+
+
+@api.route('/products', methods=['GET'])
+def get_all_products():
+    products = Product.query.all()
+
+    results = [product.serialize() for product in products]
+
+    return jsonify(results), 200
+
+
+@api.route('/cart', methods=['GET'])
+@jwt_required()
+def get_cart():
+    current_user_id = get_jwt_identity()
+
+    cart_items = CartItem.query.filter_by(user_id=current_user_id).all()
+
+    results = [item.serialize() for item in cart_items]
+
+    return jsonify(results), 200

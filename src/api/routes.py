@@ -129,6 +129,18 @@ def get_cart():
 
     cart_items = CartItem.query.filter_by(user_id=current_user_id).all()
 
-    results = [item.serialize() for item in cart_items]
+    results = []
+    for item in cart_items:
+        product = Product.query.get(item.product_id)
+        
+        if product:
+            results.append({
+                "cart_id": item.id,
+                "quantity": item.quantity,
+                "product_id": product.id,
+                "name": product.name,
+                "price": product.price,
+                "image_url": product.image_url
+            })
 
     return jsonify(results), 200

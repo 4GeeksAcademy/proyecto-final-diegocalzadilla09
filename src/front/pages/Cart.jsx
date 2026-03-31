@@ -40,12 +40,58 @@ export const Cart = () => {
                 }
 
             } catch (error) {
-                console.error("Houston, tenemos un problema de conexión:", error);
+                console.error("Tenemos un problema de conexión:", error);
             }
         };
 
         traerCarrito();
     }, []);
+
+    const eliminarDelCarrito = async (cartId) => {
+        const token = localStorage.getItem("mi_token");
+
+        try {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + `/api/cart/${cartId}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                setCarrito(carrito.filter(item => item.cart_id !== cartId));
+            }
+        } catch (error) {
+            console.error("Error al eliminar el producto:", error);
+        }
+    };
+
+    const procederAlPago = async () => {
+        const token = localStorage.getItem("mi_token");
+
+        try {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/create-checkout-session", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                window.location.href = data.url;
+            } else {
+                console.error("Error al crear la sesión de pago:", data.msg || data.error);
+                alert("Hubo un problema al procesar el pago.");
+            }
+        } catch (error) {
+            console.error("Tenemos un problema de conexión:", error);
+        }
+    };
+
+    const totalPagar = carrito.reduce((acumulador, item) => acumulador + (item.price * item.quantity), 0);
 
     return (
         <div className="container mt-5">
@@ -66,7 +112,12 @@ export const Cart = () => {
                                             <small className="text-muted">Cantidad: {item.quantity} | Precio: ${item.price}</small>
                                         </div>
                                     </div>
-                                    <button className="btn btn-sm btn-danger">Eliminar</button>
+                                    <button
+                                        className="btn btn-sm btn-danger"
+                                        onClick={() => eliminarDelCarrito(item.cart_id)}
+                                    >
+                                        Eliminar
+                                    </button>
                                 </li>
                             ))}
                         </ul>
@@ -76,7 +127,13 @@ export const Cart = () => {
                             <div className="card-body">
                                 <h5 className="card-title">Resumen de compra</h5>
                                 <p className="card-text">Total de artículos: {carrito.length}</p>
-                                <button className="btn btn-success w-100">Proceder al pago</button>
+                                <h4 className="card-text text-success mb-4">Total: ${totalPagar.toFixed(2)}</h4>
+                                <button
+                                    className="btn btn-success w-100"
+                                    onClick={procederAlPago}
+                                >
+                                    Proceder al pago
+                                </button>
                             </div>
                         </div>
                     </div>

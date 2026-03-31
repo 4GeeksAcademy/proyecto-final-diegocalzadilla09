@@ -7,8 +7,12 @@ from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+import stripe
+import os
 
 api = Blueprint('api', __name__)
+
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 # Allow CORS requests to this API
 CORS(api)
@@ -132,7 +136,7 @@ def get_cart():
     results = []
     for item in cart_items:
         product = Product.query.get(item.product_id)
-        
+
         if product:
             results.append({
                 "cart_id": item.id,
@@ -144,3 +148,96 @@ def get_cart():
             })
 
     return jsonify(results), 200
+
+
+@api.route('/cart/<int:cart_id>', methods=['DELETE'])
+@jwt_required()
+def delete_cart_item(cart_id):
+    current_user_id = get_jwt_identity()
+
+    item_to_delete = CartItem.query.filter_by(
+        id=cart_id, user_id=current_user_id).first()
+
+    if item_to_delete is None:
+        return jsonify({"msg": "El producto no está en tu carrito"}), 404
+
+    db.session.delete(item_to_delete)
+    db.session.commit()
+
+    return jsonify({"msg": "Producto eliminado exitosamente"}), 200
+
+
+@api.route('/create-checkout-session', methods=['POST'])
+@jwt_required()
+def create_checkout_session():
+    current_user_id = get_jwt_identity()
+
+    cart_items = CartItem.query.filter_by(user_id=current_user_id).all()
+
+    if not cart_items:
+        return jsonify({"msg": "El carrito está vacío"}), 400
+
+    line_items = []
+    for item in cart_items:
+        product = Product.query.get(item.product_id)
+        if product:
+            line_items.append({
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': {
+                        'name': product.name,
+                    },
+                    'unit_amount': int(product.price * 100),
+                },
+                'quantity': item.quantity,
+            })
+
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=line_items,
+            mode='payment',
+            success_url=f"{frontend_url}/success",
+            cancel_url=f"{frontend_url}/cart",
+        )
+        return jsonify({'url': checkout_session.url}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/cart/clear', methods=['DELETE'])
+@jwt_required()
+def clear_cart():
+    current_user_id = get_jwt_identity()
+
+    items_to_delete = CartItem.query.filter_by(user_id=current_user_id).all()
+
+    if not items_to_delete:
+        return jsonify({"msg": "El carrito ya estaba vacío"}), 200
+
+    for item in items_to_delete:
+        db.session.delete(item)
+
+    db.session.commit()
+
+    return jsonify({"msg": "Carrito vaciado exitosamente tras la compra"}), 200
+
+@api.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    current_user_id = get_jwt_identity()
+
+    user = User.query.get(current_user_id)
+
+    if user is None:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+
+    return jsonify({
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "address": user.address
+    }), 200

@@ -67,7 +67,7 @@ export const Home = () => {
 
                     <div className="col-md-4" key={producto.id}>
                         <div className="card shadow-sm">
-                            <img src={producto.image_url} className="card-img-top" alt={producto.name} style={{ objectFit: "cover", height: "200px" }} />
+                            <img src={producto.image_url} className="card-img-top p-3" alt={producto.name} style={{ objectFit: "contain", height: "200px",}} />
                             <div className="card-body text-center d-flex flex-column">
                                 <h5 className="card-title">{producto.name}</h5>
                                 <p className="card-text text-muted">{producto.description}</p>

@@ -23,6 +23,7 @@ sqlalchemy = "*"
 flask-bcrypt = "*"
 stripe = "*"
 pyyaml = ">=6.0.1"
+setuptools = "*"
 
 [requires]
 python_version = "3.13"

@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 export const Signup = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [address, setAddress] = useState("");
 
     const navigate = useNavigate();
 
@@ -18,7 +21,10 @@ export const Signup = () => {
                 },
                 body: JSON.stringify({
                     email: email,
-                    password: password
+                    password: password,
+                    first_name: firstName,
+                    last_name: lastName,
+                    address: address
                 })
             });
 
@@ -44,40 +50,33 @@ export const Signup = () => {
         <div className="container mt-5">
             <div className="row justify-content-center">
                 <div className="col-md-6">
-                    <div className="card shadow">
-                        <div className="card-body">
-                            <h2 className="text-center mb-4">Crear Cuenta</h2>
-
-                            <form onSubmit={handleSubmit}>
-                                <div className="mb-3">
-                                    <label className="form-label">Correo Electrónico</label>
-                                    <input
-                                        type="email"
-                                        className="form-control"
-                                        placeholder="nuevo@correo.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                    />
+                    <div className="card shadow p-4">
+                        <h2 className="text-center mb-4">Crear Cuenta</h2>
+                        <form onSubmit={handleSubmit}>
+                            <div className="row">
+                                <div className="col-md-6 mb-3">
+                                    <label className="form-label">Nombre</label>
+                                    <input type="text" className="form-control" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
                                 </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Contraseña</label>
-                                    <input
-                                        type="password"
-                                        className="form-control"
-                                        placeholder="********"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                    />
+                                <div className="col-md-6 mb-3">
+                                    <label className="form-label">Apellido</label>
+                                    <input type="text" className="form-control" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                                 </div>
-
-                                <button type="submit" className="btn btn-success w-100">
-                                    Registrarse
-                                </button>
-                            </form>
-                        </div>
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Dirección de Envío</label>
+                                <input type="text" className="form-control" placeholder="Calle, Número, Ciudad..." value={address} onChange={(e) => setAddress(e.target.value)} required />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Correo Electrónico</label>
+                                <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Contraseña</label>
+                                <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                            </div>
+                            <button type="submit" className="btn btn-primary w-100">Registrarse</button>
+                        </form>
                     </div>
                 </div>
             </div>

@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, User, CartItem, Product
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
-from flask_bcrypt import Bcrypt
+from flask_bcrypt import Bcrypt, generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import stripe
 import os
@@ -34,8 +34,8 @@ def register_user():
 
     if body is None:
         return jsonify({"msg": "Debes enviar un body en formato JSON"}), 400
-    if 'email' not in body or 'password' not in body:
-        return jsonify({"msg": "El email y el password son obligatorios"}), 400
+    if 'email' not in body or 'password' not in body or 'first_name' not in body or 'last_name' not in body or 'address' not in body:
+        return jsonify({"msg": "Todos los campos (email, password, nombre, apellido y dirección) son obligatorios"}), 400
 
     existing_user = User.query.filter_by(email=body['email']).first()
     if existing_user:
@@ -225,6 +225,7 @@ def clear_cart():
 
     return jsonify({"msg": "Carrito vaciado exitosamente tras la compra"}), 200
 
+
 @api.route('/profile', methods=['GET'])
 @jwt_required()
 def get_profile():
@@ -241,3 +242,52 @@ def get_profile():
         "last_name": user.last_name,
         "address": user.address
     }), 200
+
+
+@api.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if not user:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+
+    body = request.get_json()
+
+    user.first_name = body.get('first_name', user.first_name)
+    user.last_name = body.get('last_name', user.last_name)
+    user.address = body.get('address', user.address)
+
+    db.session.commit()
+
+    return jsonify({"msg": "Perfil actualizado con éxito"}), 200
+
+
+@api.route('/update-password', methods=['PUT'])
+@jwt_required()
+def update_password():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if not user:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+
+    body = request.get_json()
+    old_password = body.get('old_password')
+    new_password = body.get('new_password')
+
+    if not old_password or not new_password:
+        return jsonify({"msg": "Debes enviar la contraseña actual y la nueva"}), 400
+
+    password_is_valid = bcrypt.check_password_hash(user.password, old_password)
+    if not password_is_valid:
+        return jsonify({"msg": "La contraseña actual es incorrecta"}), 401
+
+    hashed_new_password = bcrypt.generate_password_hash(
+        new_password).decode('utf-8')
+    user.password = hashed_new_password
+
+    db.session.commit()
+
+    return jsonify({"msg": "Contraseña actualizada exitosamente"}), 200

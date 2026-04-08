@@ -102,13 +102,15 @@ export const Profile = () => {
                 });
 
                 if (response.ok) {
-                    localStorage.removeItem("token");
+                    localStorage.clean();
                     window.location.href = "/";
                 } else {
-                    alert("No se pudo eliminar la cuenta.");
+                    const errorData = await response.json();
+                    alert(errorData.msg || "Error al eliminar la cuenta");
                 }
             } catch (error) {
                 console.error("Error al eliminar:", error);
+                alert("Ocurrió un error de red al intentar borrar la cuenta.");
             }
         }
     };

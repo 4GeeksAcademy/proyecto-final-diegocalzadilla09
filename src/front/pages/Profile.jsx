@@ -90,7 +90,29 @@ export const Profile = () => {
             console.error("Error cambiando contraseña:", error);
         }
     };
-    
+
+    const borrarCuenta = async () => {
+        if (confirm("¿Estás completamente seguro de eliminar tu cuenta? Esta acción es irreversible.")) {
+            try {
+                const response = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/profile", {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    localStorage.removeItem("token");
+                    window.location.href = "/";
+                } else {
+                    alert("No se pudo eliminar la cuenta.");
+                }
+            } catch (error) {
+                console.error("Error al eliminar:", error);
+            }
+        }
+    };
+
     if (!perfil) return <div className="text-center mt-5"><h2>Cargando...</h2></div>;
 
     return (
@@ -142,7 +164,7 @@ export const Profile = () => {
                                 {isEditingPassword ? "Cancelar" : "Cambiar Contraseña"}
                             </button>
                         </div>
-                        
+
                         {isEditingPassword && (
                             <div className="card-body p-4">
                                 <div className="mb-3">
@@ -158,10 +180,13 @@ export const Profile = () => {
                                 </button>
                             </div>
                         )}
-                        
+
                         <div className="card-footer bg-white border-0 py-3">
                             <button className="btn btn-outline-danger w-100 fw-bold" onClick={() => { localStorage.removeItem("mi_token"); navigate("/login"); }}>
                                 Cerrar Sesión
+                            </button>
+                            <button className="btn btn-outline-danger ms-2" onClick={borrarCuenta}>
+                                Eliminar Cuenta
                             </button>
                         </div>
                     </div>

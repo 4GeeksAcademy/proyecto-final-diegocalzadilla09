@@ -291,3 +291,17 @@ def update_password():
     db.session.commit()
 
     return jsonify({"msg": "Contraseña actualizada exitosamente"}), 200
+
+@api.route('/profile', methods=['DELETE'])
+@jwt_required()
+def delete_profile():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if user is None:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+
+    db.session.delete(user)
+    db.session.commit()
+    
+    return jsonify({"msg": "Cuenta eliminada con éxito"}), 200
